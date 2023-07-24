@@ -1,4 +1,9 @@
-const { getUserDebt, incrementProfileBalance, checkValidDepositAmount } = require('./balances.service');
+const {
+  getUserDebt,
+  incrementProfileBalance,
+  checkValidDepositAmount,
+  decrementProfileBalance,
+} = require('./balances.service');
 const { Op } = require('sequelize');
 
 // mock the sequelize models with jest
@@ -6,6 +11,7 @@ jest.mock('../models', () => {
   return {
     Profile: {
       increment: jest.fn(),
+      decrement: jest.fn(),
     },
     Contract: {},
     Job: {
@@ -97,5 +103,25 @@ describe('checkValidDepositAmount', () => {
     const depositAmount = 25;
 
     expect(() => checkValidDepositAmount(totalDebt, depositAmount)).not.toThrowError();
+  });
+});
+
+describe('decrementProfileBalance', () => {
+  it('should call Profile.decrement with the correct parameters', async () => {
+    const { Profile } = require('../models');
+    jest.spyOn(Profile, 'decrement');
+
+    const userId = 1;
+    const amount = 100;
+    const transaction = { test: 'test' };
+
+    await decrementProfileBalance(userId, amount, transaction);
+
+    expect(Profile.decrement).toHaveBeenCalledWith('balance', {
+      by: amount,
+      where: { id: userId },
+      transaction,
+      lock: true,
+    });
   });
 });

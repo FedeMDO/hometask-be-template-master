@@ -39,6 +39,16 @@ async function incrementProfileBalance(userId, amount, transaction) {
   });
 }
 
+async function decrementProfileBalance(userId, amount, transaction) {
+  // decrement client's balance
+  return await Profile.decrement('balance', {
+    by: amount,
+    where: { id: userId },
+    transaction,
+    lock: true,
+  });
+}
+
 function checkValidDepositAmount(totalDebt, depositAmount) {
   // a client can't deposit more than 25% his total of 'jobs to pay'
   // round up to the nearest integer
@@ -63,4 +73,5 @@ module.exports = {
   getUserDebt,
   incrementProfileBalance,
   checkValidDepositAmount,
+  decrementProfileBalance,
 };
