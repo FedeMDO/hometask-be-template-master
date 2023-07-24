@@ -1,4 +1,27 @@
-# DEEL BACKEND TASK
+# Dev notes
+
+## Things done beyond the minimal requirements
+
+- created models folder to store each model separately
+- created services folder to store service methods that represent the business logic
+- created the controllers folder to handle the http clients calls
+- concurrency for read+update actions is secured with [Lock](https://sequelize.org/docs/v6/other-topics/transactions/#locks) and [transactions](https://sequelize.org/docs/v6/other-topics/transactions/)
+- added a middleware to validate dates (simple iso8601 date validation)
+- added service unit tests to test business logic and the parameters we pass to sequilize model methods.
+- activated paranoid tables (a.k.a. soft deletes), which is important in most production environments where we don’t want to really delete data.
+- added prettier as a dev dep + code style definition. passed prettier through all files.
+- added a Postman collection json in the project root.
+
+## What would I do if I had more time (as a BE developer):
+
+- Logger for monitoring.
+- Typescript for type safety.
+- End to end tests.
+- Validation with a library like Joi.
+- swagger/open-api automatically generated docs.
+- If there would be a choice, I would use Prisma as a better option than Sequelize, since the latter does not come with type safety and does not support typescript.
+
+# BACKEND TASK
 
 💫 Welcome! 🎉
 
