@@ -26,10 +26,17 @@ Profile.init(
     type: {
       type: Sequelize.ENUM('client', 'contractor'),
     },
+    fullName: {
+      type: Sequelize.VIRTUAL,
+      get() {
+        return `${this.firstName} ${this.lastName}`;
+      },
+    },
   },
   {
     sequelize,
     modelName: 'Profile',
+    paranoid: true,
   },
 );
 
@@ -47,6 +54,7 @@ Contract.init(
   {
     sequelize,
     modelName: 'Contract',
+    paranoid: true,
   },
 );
 
@@ -72,6 +80,7 @@ Job.init(
   {
     sequelize,
     modelName: 'Job',
+    paranoid: true,
   },
 );
 
