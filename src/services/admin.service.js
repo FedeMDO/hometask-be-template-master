@@ -52,6 +52,16 @@ async function findBestProfession(start, end) {
   };
 }
 
+function mapBestClients(bestClients) {
+  return bestClients.map((x) => {
+    return {
+      id: x.id,
+      fullName: x.fullName, // fullName is virtual in the model
+      paid: x.Client[0].Jobs[0].dataValues.total_spent,
+    };
+  });
+}
+
 async function findBestClients(start, end, limit) {
   const jobWhere = {
     paid: true,
@@ -93,17 +103,12 @@ async function findBestClients(start, end, limit) {
   return {
     limit,
     count: bestClients.length,
-    bestClients: bestClients.map((x) => {
-      return {
-        id: x.id,
-        fullName: x.fullName, // fullName is virtual in the model
-        paid: x.Client[0].Jobs[0].dataValues.total_spent,
-      };
-    }),
+    bestClients: mapBestClients(bestClients),
   };
 }
 
 module.exports = {
   findBestProfession,
   findBestClients,
+  mapBestClients,
 };
