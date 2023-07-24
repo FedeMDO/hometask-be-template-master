@@ -1,5 +1,6 @@
 const { sequelize, Profile, Contract, Job } = require('../models');
 const { Op } = require('sequelize');
+const { incrementProfileBalance, decrementProfileBalance } = require('./balances.service');
 
 async function getUnpaidJobs(profileId) {
   return await Job.findAll({
@@ -21,76 +22,87 @@ async function getUnpaidJobs(profileId) {
   });
 }
 
+async function findOneJob(jobId, profileId, transaction) {
+  const job = await Job.findOne({
+    include: [
+      {
+        model: Contract,
+        where: {
+          ClientId: profileId,
+        },
+      },
+    ],
+    where: {
+      id: jobId,
+      paid: null, // we only want unpaid jobs
+    },
+    transaction,
+    lock: true,
+  });
+
+  if (!job) {
+    throw new Error('job not found');
+  }
+}
+
+function validateSufficientFunds(profile, price) {
+  if (profile.balance < price) {
+    throw new Error('insufficient funds');
+  }
+}
+
+async function findContractor(contractId, transaction) {
+  // find contractor's profile
+  const contractor = await Profile.findOne({
+    include: {
+      model: Contract,
+      as: 'Contractor',
+      where: { id: contractId },
+    },
+    transaction,
+    lock: true,
+  });
+
+  if (!contractor) {
+    throw new Error('contractor not found');
+  }
+
+  return contractor;
+}
+
+async function tagJobAsPaid(jobId, transaction) {
+  // update job payment info
+  return await Job.update(
+    {
+      paid: true,
+      paymentDate: new Date().toISOString(), // timestamp
+    },
+    { where: { id: jobId }, transaction, lock: true },
+  );
+}
+
 async function payForJob(profile, jobId) {
   // transaction to update profiles' balances and job payment info
   return await sequelize.transaction(async (t) => {
-    const withTransactionAndLock = {
-      transaction: t,
-      lock: true,
-    };
+    const job = await findOneJob(jobId, profile.id, t);
 
-    const job = await Job.findOne({
-      include: [
-        {
-          model: Contract,
-          where: {
-            ClientId: profile.id,
-          },
-        },
-      ],
-      where: {
-        id: jobId,
-        paid: null, // we only want unpaid jobs
-      },
-      ...withTransactionAndLock,
-    });
+    validateSufficientFunds(profile, job.price);
 
-    if (!job) {
-      return res.sendStatus(404);
-    }
+    const contractor = await findContractor(job.ContractId, t);
 
-    if (profile.balance < job.price) {
-      return res.status(400).json({
-        message: 'insufficient funds',
-      });
-    }
+    await decrementProfileBalance(profile.id, job.price, t);
 
-    // find contractor's profile
-    const contractor = await Profile.findOne({
-      include: {
-        model: Contract,
-        as: 'Contractor',
-        where: { id: job.ContractId },
-      },
-      ...withTransactionAndLock,
-    });
+    await tagJobAsPaid(job.id, t);
 
-    // decrement client's balance
-    await Profile.decrement('balance', {
-      by: job.price,
-      where: { id: profile.id },
-      ...withTransactionAndLock,
-    });
-
-    // update job payment info
-    await Job.update(
-      {
-        paid: true,
-        paymentDate: new Date().toISOString(), // timestamp
-      },
-      { where: { id: jobId }, ...withTransactionAndLock },
-    );
-
-    // increment contractor's balance
-    await Profile.increment('balance', {
-      by: job.price,
-      where: { id: contractor.id },
-      ...withTransactionAndLock,
-    });
+    await incrementProfileBalance(contractor.id, job.price, t);
   });
 }
 
 module.exports = {
   getUnpaidJobs,
   payForJob,
+  findOneJob,
+  validateSufficientFunds,
+  findContractor,
+  tagJobAsPaid,
 };
