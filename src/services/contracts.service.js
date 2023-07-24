@@ -1,4 +1,4 @@
-const { sequelize, Profile, Contract, Job } = require('../models');
+const { Contract, Job } = require('../models');
 const { Op } = require('sequelize');
 
 async function getActiveContracts(profileId) {
