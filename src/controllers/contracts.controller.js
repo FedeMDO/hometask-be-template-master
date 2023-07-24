@@ -10,24 +10,9 @@ const { Job } = require('../models');
  * (client or contractor), the list should only contain non terminated contracts.
  */
 router.get('/', getProfile, async (req, res) => {
-  const { Contract } = req.app.get('models');
   const userProfileId = req.profile.id;
 
-  const contracts = await Contract.findAll({
-    include: [
-      {
-        model: Job,
-        as: 'Jobs',
-      },
-    ],
-    where: {
-      status: {
-        [Op.ne]: 'terminated',
-      },
-      // must belong to profile
-      [Op.or]: [{ ContractorId: userProfileId }, { ClientId: userProfileId }],
-    },
-  });
+  const contracts = await getActiveContracts(userProfileId);
 
   res.json(contracts);
 });
@@ -36,17 +21,10 @@ router.get('/', getProfile, async (req, res) => {
  * Return the contract only if it belongs to the profile calling.
  */
 router.get('/:id', getProfile, async (req, res) => {
-  const { Contract } = req.app.get('models');
   const { id } = req.params;
   const userProfileId = req.profile.id;
 
-  const contract = await Contract.findOne({
-    where: {
-      id: id,
-      // must belong to profile
-      [Op.or]: [{ ContractorId: userProfileId }, { ClientId: userProfileId }],
-    },
-  });
+  const contract = await getOneContract(userProfileId, id);
 
   if (!contract) {
     return res.sendStatus(404);
