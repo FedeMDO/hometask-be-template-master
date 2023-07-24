@@ -3,7 +3,7 @@ const router = express.Router();
 
 const { getProfile } = require('../middleware/getProfile');
 const { Op } = require('sequelize');
-const { Job } = require('../model');
+const { Job } = require('../models');
 
 /**
  * Returns a list of contracts belonging to a user
